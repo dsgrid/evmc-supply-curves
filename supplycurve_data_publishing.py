@@ -17,15 +17,20 @@ def create_cost_table(ENROLLMENT_RESOLUTION):
                 PARAMS.calc_beta()
 
                 """mix of new chargers and no new chargers"""
-                customer_df = PARAMS.df_by_required_install('new_install') 
+                customer_df = PARAMS.df_by_required_install('new_install', num_customers=5000) 
                 customer_df['install']=['new_install']*len(customer_df)
                 
-                no_install_df=PARAMS.df_by_required_install('no_install')
+                no_install_df=PARAMS.df_by_required_install('no_install', num_customers=5000)
                 no_install_df['install']=['no_install']*len(no_install_df)
 
                 customer_df = customer_df._append(no_install_df)
 
-                customer_df['total_cost'] = customer_df[['op_and_admin', 'marketing', 'incentives']].sum(axis=1)
+                #Don't double count marketing for LDV TOU
+                if ( (PARAMS.ev_type=='LDV')and(PARAMS.program=='TOU') ):
+                    customer_df['total_cost'] = customer_df[['op_and_admin', 'incentives']].sum(axis=1)
+                else:
+                    customer_df['total_cost'] = customer_df[['op_and_admin', 'marketing', 'incentives']].sum(axis=1)
+
                 customer_df.sort_values('total_cost', inplace=True)
 
                 customer_df.enrollment=customer_df.enrollment*100 #convert to percent
@@ -126,7 +131,6 @@ if __name__ == "__main__":
     
     #create tables
     costs=create_cost_table(ENROLLMENT_RESOLUTION)
-    print(len(costs))
 
     """get cost per vehicles"""
     
