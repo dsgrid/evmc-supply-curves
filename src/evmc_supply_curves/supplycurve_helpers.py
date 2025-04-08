@@ -316,7 +316,7 @@ class SupplyCurves():
         cols=set(costs.columns)
         cols=list(cols.difference(set(parameters)))
         costs[cols]=costs[cols].map(lambda x: float(x) if (x != '--') else x)
-        rounded=costs.applymap(lambda x: (PRECISION * round(x/PRECISION)) if isinstance(x, float) else x)
+        rounded=costs.apply(lambda x: (PRECISION * round(x/PRECISION)) if isinstance(x, float) else x)
         rounded_cost=PRECISION * round(COST/PRECISION)
 
         results=pd.concat([costs[parameters],costs[rounded[cols]==rounded_cost][cols]], axis=1)
