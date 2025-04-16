@@ -125,12 +125,38 @@ def participation_given_cost(COST, PRECISION=1, costs=None):
                             'value': 'Cost_per_EV'},inplace=True)
     return results
 
+def create_betas_table():
+    cwd = os.getcwd()
+    betas = pd.DataFrame()
+    for EV_TYPE in ['LDV','MHDV']:
+        df = pd.read_csv(os.path.join(cwd, 'cost_inputs','scenario_vars.csv'))
+        df = df.loc[(df.ev_type==EV_TYPE)]
+        for CUSTOMER_TYPE in ['new','recurring']:
+            for i in range(len(df)):
+                #get values and cost caluculations for each program, year, and scenario
+                PARAMS=ScenarioParameters(df.iloc[i].to_frame().T, CUSTOMER_TYPE)
+                PARAMS.calc_beta()
+                
+                new_row={'EV_Type': EV_TYPE,
+                        'Program':PARAMS.program,
+                        'Scenario': df.iloc[i].scenario,
+                        'Year': df.iloc[i].year,
+                        'Customer_Type': CUSTOMER_TYPE,
+                        'beta_no_install': PARAMS.no_install_beta,
+                        'beta_install_required': PARAMS.install_beta if CUSTOMER_TYPE=='new' else None}
+                    
+                betas=pd.concat([betas, pd.DataFrame(new_row, index=[i])])
+    
+    betas.to_csv(os.path.join(cwd,'outputs',f"betas_table.csv"),index=False)
+    return betas
+
 if __name__ == "__main__":
     #User specified variables
     ENROLLMENT_RESOLUTION = 1 #percent
     
     #create tables
     costs=create_cost_table(ENROLLMENT_RESOLUTION)
+    betas=create_betas_table()
 
     """get cost per vehicles"""
     
