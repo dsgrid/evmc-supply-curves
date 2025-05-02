@@ -1,71 +1,10 @@
-
 import os
 import math
-# import logging
 import matplotlib.pyplot as plt
 
 import numpy as np
 import pandas as pd
-# import yaml
-# from yaml.loader import SafeLoader
-
-# logger = logging.getLogger('layerstack.layers.DispatchAgainstPricesWithMappingInfoInDeviceMetadata').setLevel(logging.INFO)
-# logging.basicConfig(level=logging.INFO)
-# logger = logging.getLogger(__name__)
-
-# def flatten(xss):
-#     return [x for xs in xss for x in xs]
-
-# class InputYMLHandler(): #handling for supply curve inputs yml
-
-#     def __init__(self, ymlpath='supplycurveconfig.yml'):
-#         #TODO: unpack this directly to variables
-#         with open(ymlpath) as f:
-#             self.DATA = yaml.load(f,Loader=SafeLoader)
-#         self.reeds_bins = self.DATA['user_inputs']['reeds_bins']
-#         self.reeds_techs = self.DATA['user_inputs']['reeds_techs']
-#         self.year = self.DATA['user_inputs']['year']
-#         self.customer_type = self.DATA['user_inputs']['customer_type'].lower()
-#         self.ev_type = self.DATA['user_inputs']['ev_type'].upper()
-#         self.scenario = self.DATA['user_inputs']['scenario']
-#         self.TRIPWEIGHT = self.DATA['TEMPO_data']['TRIPWEIGHT']
-#         self.EVCOUNT = self.DATA['TEMPO_data']['EVCOUNT']*self.TRIPWEIGHT
-#         self.MWPEREV = self.DATA['TEMPO_data']['MWPEREV']
-#         self.REGIONSFROMTEMPO = self.DATA['TEMPO_data']['REGIONSFROMTEMPO']
-#         self.per_ev=self.DATA['user_inputs']['per_ev']
-
-#         self.costs_filename = self.DATA['cost_filename']
-
-#         self._check_inputs() 
-
-    
-#     def _check_inputs(self):
-#         if self.customer_type not in ['new','recurring']:
-#             return ValueError(f"customer type is {self.customer_type}, but only valid inputs are currently new and recurring.")
-#         if self.year < 2025 or self.year > 2050:
-#             return ValueError(f"year is {self.year}, but only valid inputs are 2025-2050.")
-#         if self.scenario not in ['low','mid', 'high', 'flat']:
-#             return ValueError(f"scenario name is {self.scenario}, valid input must be 'low','mid', 'high', or 'flat'")
-       
-#         logger.info(" ...checked inputs without error!")
-#         return None
-    
-#     def select_params(self,path, tech, filename): 
-#         """This function reads in the parameters (costs, upper limit of enrollment, incentive or marketing responses)
-#         for a specified tech (program), year, scenario, and EV type. Returns a row of a DataFrame with the parameters
-#         needed to create a supply curve."""
-        
-#         #this is currently a weird way to specify up tech/program. Why not just specify program instead of tech?
-#         #leaving this with "tech" as an arg to anticipate ReEDS-ness but might make sense to change
-
-#         #look up program corresponding to tech
-#         tech_df = pd.read_csv(os.path.join(path, 'costs','tech_to_program_lookup.csv'))
-#         self.program=tech_df.loc[tech_df.tech==tech].program.values[0]
-#         #look up scenario variables corresponding to inputs
-#         df = pd.read_csv(os.path.join(path, 'costs',f'{filename}.csv'))
-#         vars_row = df.loc[(df.ev_type==self.ev_type)&(df.year==self.year)&\
-#                           (df.scenario==self.scenario)&(df.program==self.program)]
-#         return vars_row
+import evmc_supply_curves
     
 class ScenarioParameters():
     """Loads variables and calculates supply curve features resulting from inputs"""    
@@ -90,26 +29,15 @@ class ScenarioParameters():
         temp=(self.enrollment_anch-self.upper_limit)/(self.lower_limit-self.upper_limit)
         #customer enrollment increasing in response to marketing for LDVs in TOU programs 
         if ( (self.program == 'TOU') and (self.ev_type=='LDV') ): 
-            if self.marketing > 0:
-                self.no_install_beta=math.log(temp)/(-self.marketing)
-                self.install_beta = None #install never required for TOU
-            else:
-                #no marketing, no response
-                self.no_install_beta = None
-                self.install_beta = None #install never required for TOU
+            with np.errstate(divide='ignore'):
+                self.no_install_beta=np.divide(math.log(temp),(-self.marketing))
+                self.install_beta = np.divide(math.log(temp),(-self.marketing))
         #customer enrollment responds to incentives in all other cases
         else:
             # find unique beta for customers requiring a new install
-            if self.incentive_new_install > 0: 
-                self.install_beta=math.log(temp)/(-self.incentive_new_install) 
-            else:
-                self.install_beta = None
-            # find unique beta for customers not requiring a new install
-            if self.incentive_annual > 0: 
-                self.no_install_beta=math.log(temp)/(-self.incentive_annual) 
-            else:
-                self.no_install_beta = None
-
+            with np.errstate(divide='ignore'):
+                self.no_install_beta = np.divide(math.log(temp),(-self.incentive_annual))
+                self.install_beta = np.divide(math.log(temp),(-self.incentive_new_install))
                 
     def df_by_required_install(self, install_type, num_customers=1000):
         """return df: each row is a customer with columns of associated costs
@@ -178,8 +106,8 @@ class SupplyCurves():
         self.enrollment_resolution=enrollment_resolution
         # user can provide a different path
         if table_path is None:
-            cwd = os.getcwd()
-            self.table_path=os.path.join(cwd,'..','outputs',f'costs_table_{enrollment_resolution}_pct.csv')
+            # cwd = os.getcwd()
+            self.table_path=os.path.join(evmc_supply_curves.ROOT_DIR,'outputs',f'costs_table_{enrollment_resolution}_pct.csv')
         else:
             self.table_path=table_path
 
@@ -188,8 +116,8 @@ class SupplyCurves():
         #check that the table for the specified resolution exists
         assert os.path.exists(self.table_path), f"No cost table found. Check that a table with {self.enrollment_resolution}%\
                                                  \nresolution exists and the path to the table is correct: {self.table_path}"
-        cwd = os.getcwd()
-        self.table = pd.read_csv(os.path.join(cwd, '..','outputs',f'costs_table_{self.enrollment_resolution}_pct.csv'))
+        # cwd = os.getcwd()
+        self.table = pd.read_csv(os.path.join(evmc_supply_curves.ROOT_DIR, 'outputs',f'costs_table_{self.enrollment_resolution}_pct.csv'))
 
     def create_cost_table(self):
         """SupplyCurves.table will be a dataframe of for a given enrollment resolution. This will create a new 
@@ -202,9 +130,9 @@ class SupplyCurves():
         # create list of enrollment levels to calculation as a ratio (vs percent)
         enrollment = [self.enrollment_resolution*i/100 for i in range(int(100/self.enrollment_resolution))]
     
-        cwd = os.getcwd()            
+        # cwd = os.getcwd()            
         costs=pd.DataFrame()
-        df = pd.read_csv(os.path.join(cwd, '..','cost_inputs','scenario_vars.csv'))
+        df = pd.read_csv(os.path.join(evmc_supply_curves.ROOT_DIR,'cost_inputs','scenario_vars.csv'))
         
         for EV_TYPE in ['LDV','MHDV']:
             df_ev = df.loc[(df.ev_type==EV_TYPE)]
@@ -262,7 +190,7 @@ class SupplyCurves():
                     costs=pd.concat([costs, pd.DataFrame(new_row, index=[i])])
         
         costs=costs.map(lambda x: f'{x:.2f}' if isinstance(x, float) else x)
-        costs.to_csv(os.path.join(cwd,'..','outputs',f"costs_table_{self.enrollment_resolution}_pct.csv"),index=False)
+        costs.to_csv(os.path.join(evmc_supply_curves.ROOT_DIR,'outputs',f"costs_table_{self.enrollment_resolution}_pct.csv"),index=False)
         self.table=costs    
 
     def cost_per_EV(self, PERCENT, **kwargs):
@@ -326,6 +254,31 @@ class SupplyCurves():
         results.rename(columns={'variable':'Percent_EVs_Participating',
                                 'value': 'Cost_per_EV'},inplace=True)
         return results
+    
+    def create_betas_table(self):
+        # cwd = os.getcwd()
+        betas = pd.DataFrame()
+        for EV_TYPE in ['LDV','MHDV']:
+            df = pd.read_csv(os.path.join(evmc_supply_curves.ROOT_DIR, 'cost_inputs','scenario_vars.csv'))
+            df = df.loc[(df.ev_type==EV_TYPE)]
+            for CUSTOMER_TYPE in ['new','recurring']:
+                for i in range(len(df)):
+                    #get values and cost caluculations for each program, year, and scenario
+                    PARAMS=ScenarioParameters(df.iloc[i].to_frame().T, CUSTOMER_TYPE)
+                    PARAMS.calc_beta()
+                    
+                    new_row={'EV_Type': EV_TYPE,
+                            'Program':PARAMS.program,
+                            'Scenario': df.iloc[i].scenario,
+                            'Year': df.iloc[i].year,
+                            'Customer_Type': CUSTOMER_TYPE,
+                            'beta_no_install': PARAMS.no_install_beta,
+                            'beta_install_required': PARAMS.install_beta if CUSTOMER_TYPE=='new' else np.nan}
+                        
+                    betas=pd.concat([betas, pd.DataFrame(new_row, index=[i])])
+        self.betas=betas   
+        betas.to_csv(os.path.join(evmc_supply_curves.ROOT_DIR,'outputs',f"betas_table.csv"),index=False)
+        return betas
 
 # Plotting functions
 def plot_incentives_v_enrollment(curve_params_dict, ax, incentives=list(range(0,1000))):
