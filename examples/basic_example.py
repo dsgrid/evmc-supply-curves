@@ -6,6 +6,7 @@ if __name__ == "__main__":
     
     #create tables
     sc=SupplyCurves()
+    sc.create_betas_table()
     sc.load_existing_table()
 
     sc2=SupplyCurves(enrollment_resolution=ENROLLMENT_RESOLUTION)
