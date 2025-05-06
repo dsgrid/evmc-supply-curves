@@ -114,18 +114,17 @@ class SupplyCurves():
     def load_existing_table(self):
         """SupplyCurves.table will be a dataframe of already existing values for a given enrollment resolution"""
         #check that the table for the specified resolution exists
-        assert os.path.exists(self.table_path), f"No cost table found. Check that a table with {self.enrollment_resolution}%\
-                                                 \nresolution exists and the path to the table is correct: {self.table_path}"
-        # cwd = os.getcwd()
+        if not os.path.exists(self.table_path):
+            raise NameError( f"No cost table found. Check that a table with {self.enrollment_resolution}%\
+                                                 \nresolution exists and the path to the table is correct: {self.table_path}")
         self.table = pd.read_csv(os.path.join(evmc_supply_curves.ROOT_DIR, 'outputs',f'costs_table_{self.enrollment_resolution}_pct.csv'))
-
+ 
     def create_cost_table(self):
         """SupplyCurves.table will be a dataframe of for a given enrollment resolution. This will create a new 
         table of supply curves for this resolution, saved to the 'outputs' directory."""
-
-        assert not (os.path.exists(self.table_path)),\
-            f"A table for a resolution of {self.enrollment_resolution}% already exists in the specified path:\
-                  \n\t{self.table_path}\nPlease delete this table, specify a new directory, or use SupplyCurves.load_existing_table()."
+        if (os.path.exists(self.table_path)):
+            raise NameError(f"A table for a resolution of {self.enrollment_resolution}% already exists in the specified path:\
+                  \n\t{self.table_path}\nPlease delete this table, specify a new directory, or use SupplyCurves.load_existing_table().")
 
         # create list of enrollment levels to calculation as a ratio (vs percent)
         enrollment = [self.enrollment_resolution*i/100 for i in range(int(100/self.enrollment_resolution))]
@@ -196,10 +195,14 @@ class SupplyCurves():
     def cost_per_EV(self, PERCENT, **kwargs):
         """returns per vehicle cost in USD for specified parameters. 
         If more than one possible cost exists, this will return a DataFrame for all costs."""
-        assert isinstance(PERCENT, int), "PERCENT must be an int"
-        assert PERCENT<=100, "PERCENT cannot but greater than 100"
-        assert PERCENT>0, "PERCENT must be greater than zero"
-        assert not self.table.empty, "No cost table specified for query. Please use SupplyCurves.load_existing_table()"
+        if not isinstance(PERCENT, int):
+            raise ValueError("PERCENT must be an int")
+        if PERCENT>100:
+            raise ValueError("PERCENT cannot but greater than 100")
+        if PERCENT<=0:
+            raise ValueError("PERCENT must be greater than zero")
+        if self.table.empty:
+            raise NameError("No cost table specified for query. Please use SupplyCurves.load_existing_table()")
         
         parameters=['EV_Type','Program','Scenario', 'Year', 'Customer_Type']
         args={'EV_Type': ['LDV', 'MHDV'],
@@ -208,8 +211,10 @@ class SupplyCurves():
             'Year': [2025, 2030, 2035, 2040, 2045, 2050],
             'Customer_Type': ['new', 'recurring']}
         for key, parameter in kwargs.items():
-            assert key in parameters, f"{key} is not a defined parameter, expected parameters are 'EV_Type','Program','Scenario', 'Year', 'Customer_Type'"
-            assert parameter in args[key], f"{parameter} is not an option for {key}, see values in cost table for examples "
+            if key not in parameter:
+                raise ValueError(f"{key} is not a defined parameter, expected parameters are 'EV_Type','Program','Scenario', 'Year', 'Customer_Type'")
+            if parameter not in args[key]:
+                raise ValueError(f"{parameter} is not an option for {key}, see values in cost table for examples ")
         
         costs=self.table
 
