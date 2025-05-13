@@ -8,7 +8,7 @@ Data and scripts include:
 
 - `outputs\costs_table_1_pct.csv` is a table of per EV costs for all years, vehicle types, and programs at 1% increments of customer participation.
 
--`outputs\betas_table.csv` is a table of beta values, or values that determine the customer participation rate as a function of incentives. This function is a decaying exponential response or the form r*(1-e^(-beta*x)) where x is the incentive value in USD and r is a maximum participation rate.
+- `outputs\betas_table.csv` is a table of beta values, or values that determine the customer participation rate as a function of incentives. This function is a decaying exponential response or the form r*(1-e^(-beta*x)) where x is the incentive value in USD and r is a maximum participation rate.
 
 The first two files are essential to generating EVMC supply curves, while the last two tables are provided for users who would like the supply curve data without needing to install or run code. 
 
