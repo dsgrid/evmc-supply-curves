@@ -38,3 +38,5 @@ sc.cost_per_EV(PERCENT, EV_Type='LDV') # returns a per EV cost (1)
 sc.participation_given_cost(COST, PRECISION) # returns percent participation
 
 ```
+
+NREL Software Record SWR-25-69 "Electric Vehicle Managed Charging (EVMC) Supply Curves"
