@@ -119,7 +119,7 @@ class SupplyCurves():
         self.table = pd.read_csv(os.path.join(evmc_supply_curves.ROOT_DIR, 'outputs',f'costs_table_{self.enrollment_resolution}_pct.csv'))
  
     def create_cost_table(self, overwrite=False):
-        """SupplyCurves.table will be a dataframe of for a given enrollment resolution. This will create a new 
+        """SupplyCurves.table will be a dataframe of per vehicle costs for a given enrollment resolution. This will create a new 
         table of supply curves for this resolution, saved to the 'table_path'."""
         if ( (os.path.exists(self.table_path)) and (overwrite==False)):
             raise NameError(f"A table for a resolution of {self.enrollment_resolution}% already exists in the specified path:\
