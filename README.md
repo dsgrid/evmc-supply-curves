@@ -53,8 +53,6 @@ sc=SupplyCurves()
 sc.load_existing_table()    # creates an instance of a supply curve table that can be queried
 
 sc.cost_per_EV(PERCENT, EV_Type='LDV') # returns a per EV cost (1)
-sc.participation_given_cost(COST, PRECISION) # returns percent participation
-
 ```
 
 NREL Software Record SWR-25-69 "Electric Vehicle Managed Charging (EVMC) Supply Curves"
