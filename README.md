@@ -1,5 +1,5 @@
 # evmc-supply-curves
-Data and a supporting lightweight Python package that describes possible costs for enabling EV managed charging from 2025 to 2050 for three dispatch mechanisms (TOU, RTP, and DLC) and four flexibility scenarios (Low, Mid, Flat, and Flex).
+Data and a supporting lightweight Python package that describes possible costs for enabling EV managed charging from 2025 to 2050 for three dispatch mechanisms: Time-of-Use (TOU), Real Time Pricing (RTP), and direct load control (DLC) and four flexibility scenarios (Flat and Low, Mid, and High Flex).
 
 [Data Access](https://github.com/dsgrid/evmc-supply-curves/blob/main/outputs/costs_table_1_pct.csv) | [Install](#Installation)
 
@@ -41,7 +41,7 @@ and install the project in editable mode with its development dependencies:
 ```bash
 pip install -e .
 ```
-. This automatically installs all project `dependencies` documented in `pyproject.toml`.
+This automatically installs all project `dependencies` documented in `pyproject.toml`.
 
 # Usage
 `examples/basic_example.py` contains examples to create cost tables and use 1% resolution particiption data to determine (1) per EV costs of given a targeted percent participation and (2) estimated percent participation of various programs and scenarios given a per EV cost.
