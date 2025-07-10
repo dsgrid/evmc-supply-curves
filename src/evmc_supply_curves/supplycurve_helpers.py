@@ -101,6 +101,7 @@ class SupplyCurves():
         Users can create new tables at a specified resolution of percent enrollment, or use the 
         1% enrollment table provided. Additional functions can query for costs given a 
         targeted enrollment level, or enrollment levels given a specified costs."""
+    
     def __init__(self,enrollment_resolution=1, table_path=os.path.join(evmc_supply_curves.ROOT_DIR,'outputs')):
         self.table=pd.DataFrame()
         self.enrollment_resolution=enrollment_resolution
@@ -123,9 +124,9 @@ class SupplyCurves():
         table of supply curves for this resolution, saved to the 'table_path'."""
         if ( (os.path.exists(self.table_path)) and (overwrite==False)):
             raise NameError(f"A table for a resolution of {self.enrollment_resolution}% already exists in the specified path:\
-                            \n\t{self.table_path}\n\
-                            To overwrite this table, use create_cost_table(overwrite=True). Alternatively, specify a new\
-                            directory, or use SupplyCurves.load_existing_table().")
+                            \n\t{self.table_path}\
+                            \nTo overwrite this table, use create_cost_table(overwrite=True). Alternatively, specify a new\
+                            \ndirectory, or use SupplyCurves.load_existing_table().")
 
         # create list of enrollment levels to calculation as a ratio (vs percent)
         enrollment = [self.enrollment_resolution*i/100 for i in range(int(100/self.enrollment_resolution))]        
@@ -203,22 +204,22 @@ class SupplyCurves():
         if self.table.empty:
             raise NameError("No cost table specified for query. Please use SupplyCurves.load_existing_table()")
         
-        args={'EV_Type': ['LDV', 'MHDV'],
+        parameters={'EV_Type': ['LDV', 'MHDV'],
             'Program':['DLC','RTP','TOU'],
             'Scenario':['high', 'mid', 'low', 'flat'],
             'Year': [2025, 2030, 2035, 2040, 2045, 2050],
             'Customer_Type': ['new', 'recurring']}
         for key, parameter in kwargs.items():
-            if key not in args:
-                raise ValueError(f"{key} is not a defined parameter, expected parameters are  {list(args.keys())}'")
-            if parameter not in args[key]:
+            if key not in parameters:
+                raise ValueError(f"{key} is not a defined parameter, expected parameters are  {list(parameters.keys())}'")
+            if parameter not in parameters[key]:
                 raise ValueError(f"{parameter} is not an option for {key}, see values in cost table for examples ")
         
         costs=self.table
 
         #check if percent is in columns already
         cols=list(costs.columns)
-        cols=[int(col.split('%')[0]) for col in cols if col not in args] 
+        cols=[int(col.split('%')[0]) for col in cols if col not in parameters] 
         if PERCENT not in cols:
             # For best results, users should use a table of sufficient resolution (e.g. a query for 12% enrollment 
             # using a table with 10% precision will return a value closer to costs for 10% enrollment)
@@ -231,7 +232,7 @@ class SupplyCurves():
         percent_df=costs.copy()
         for key, parameter in kwargs.items():
             percent_df=percent_df.loc[(percent_df[key]==parameter)]
-        return percent_df[list(args.keys())+[percent_col]]
+        return percent_df[list(parameters.keys())+[percent_col]]
 
     
     
