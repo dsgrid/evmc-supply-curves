@@ -1,7 +1,7 @@
 # evmc-supply-curves
 Data and a supporting lightweight Python package that describes possible costs for enabling EV managed charging from 2025 to 2050 for three dispatch mechanisms: Time-of-Use (TOU), Real Time Pricing (RTP), and direct load control (DLC) and four flexibility scenarios (Flat and Low, Mid, and High Flex).
 
-[Data Access](https://github.com/dsgrid/evmc-supply-curves/blob/main/outputs/costs_table_1_pct.csv) | [Install](#Installation)
+[Data Access](https://github.com/dsgrid/evmc-supply-curves/blob/main/outputs/costs_table_1_pct.csv) | [Install](#Installation) | [Usage](#usage)
 
 Data files include:
 - `cost_inputs/scenario_vars.csv` contains costs and other supply curve parameters (upper limits of participation, enrollment response to a given incentive, and ratio of customers expected to require a new charger). 
@@ -43,8 +43,8 @@ pip install -e .
 ```
 This automatically installs all project `dependencies` documented in `pyproject.toml`.
 
-# Usage
-`examples/basic_example.py` contains examples to create cost tables and use 1% resolution particiption data to determine (1) per EV costs of given a targeted percent participation and (2) estimated percent participation of various programs and scenarios given a per EV cost.
+## Usage
+`examples/basic_example.ipynb` contains examples to create cost tables and use 1% resolution particiption data to determine per EV costs of given a targeted percent participation.
 
 ```python
 from evmc_supply_curves.supplycurve_helpers import SupplyCurves
@@ -52,7 +52,7 @@ from evmc_supply_curves.supplycurve_helpers import SupplyCurves
 sc=SupplyCurves()           
 sc.load_existing_table()    # creates an instance of a supply curve table that can be queried
 
-sc.cost_per_EV(PERCENT, EV_Type='LDV') # returns a per EV cost (1)
+sc.cost_per_EV(PERCENT, EV_Type='LDV') # returns a per EV cost 
 ```
 
 NREL Software Record SWR-25-69 "Electric Vehicle Managed Charging (EVMC) Supply Curves"
