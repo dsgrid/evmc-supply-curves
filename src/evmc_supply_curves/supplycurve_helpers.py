@@ -5,6 +5,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import evmc_supply_curves
+
+CUSTOMER_RESOLUTION=1000 # determines precision of the table outputs
+
+parameters={'EV_Type': ['LDV', 'MHDV'],
+            'Program':['DLC','RTP','TOU'],
+            'Scenario':['high', 'mid', 'low', 'flat'],
+            'Year': [2025, 2030, 2035, 2040, 2045, 2050],
+            'Customer_Type': ['new', 'recurring']}
     
 class ScenarioParameters():
     """Loads variables and calculates supply curve features resulting from inputs"""    
@@ -100,7 +108,7 @@ class SupplyCurves():
     """ Table of EVMC Supply Curves for all scenarios, programs, vehicle types, and years. 
         Users can create new tables at a specified resolution of percent enrollment, or use the 
         1% enrollment table provided. Additional functions can query for costs given a 
-        targeted enrollment level, or enrollment levels given a specified costs."""
+        targeted enrollment level."""
     
     def __init__(self,enrollment_resolution=1, table_path=os.path.join(evmc_supply_curves.ROOT_DIR,'outputs')):
         self.table=pd.DataFrame()
@@ -133,8 +141,8 @@ class SupplyCurves():
         costs=pd.DataFrame()
         df = pd.read_csv(os.path.join(evmc_supply_curves.ROOT_DIR,'cost_inputs','scenario_vars.csv'))
         
-        for EV_TYPE in ['LDV','MHDV']:
-            df_ev = df.loc[(df.ev_type==EV_TYPE)]
+        for ev_type in parameters['EV_Type']:
+            df_ev = df.loc[(df.ev_type==ev_type)]
             for CUSTOMER_TYPE in ['new','recurring']:
                 for i in range(len(df_ev)):
                     #get values and cost caluculations for each program, year, and scenario
@@ -142,7 +150,7 @@ class SupplyCurves():
                     PARAMS.calc_beta()
 
                     """mix of new chargers and no new chargers"""
-                    customer_df = PARAMS.df_by_required_install('new_install', num_customers=1000) 
+                    customer_df = PARAMS.df_by_required_install('new_install', num_customers=CUSTOMER_RESOLUTION) 
                     customer_df['install']=['new_install']*len(customer_df)
                     
                     no_install_df=PARAMS.df_by_required_install('no_install', num_customers=1000)
@@ -168,7 +176,7 @@ class SupplyCurves():
                     customer_df['rounded']=customer_df['cumenrollment'].apply(lambda x: int(self.enrollment_resolution*round(x/self.enrollment_resolution)))
                     customer_df['delta']=(customer_df['cumenrollment']-customer_df['rounded']).abs()
 
-                    new_row={'EV_Type': EV_TYPE,
+                    new_row={'EV_Type': ev_type,
                             'Program':PARAMS.program,
                             'Scenario': df.iloc[i].scenario,
                             'Year': df.iloc[i].year,
@@ -204,11 +212,6 @@ class SupplyCurves():
         if self.table.empty:
             raise NameError("No cost table specified for query. Please use SupplyCurves.load_existing_table()")
         
-        parameters={'EV_Type': ['LDV', 'MHDV'],
-            'Program':['DLC','RTP','TOU'],
-            'Scenario':['high', 'mid', 'low', 'flat'],
-            'Year': [2025, 2030, 2035, 2040, 2045, 2050],
-            'Customer_Type': ['new', 'recurring']}
         for key, parameter in kwargs.items():
             if key not in parameters:
                 raise ValueError(f"{key} is not a defined parameter, expected parameters are  {list(parameters.keys())}'")
@@ -240,16 +243,16 @@ class SupplyCurves():
         """Returns a table of beta parameters calculated from given incentives or marketing costs and
         customer enrollment responses. A .csv is also saved to the 'outputs' directory."""
         betas = pd.DataFrame()
-        for EV_TYPE in ['LDV','MHDV']:
+        for ev_type in parameters['EV_Type']:
             df = pd.read_csv(os.path.join(evmc_supply_curves.ROOT_DIR, 'cost_inputs','scenario_vars.csv'))
-            df = df.loc[(df.ev_type==EV_TYPE)]
+            df = df.loc[(df.ev_type==ev_type)]
             for CUSTOMER_TYPE in ['new','recurring']:
                 for i in range(len(df)):
                     #get values and cost caluculations for each program, year, and scenario
                     PARAMS=ScenarioParameters(df.iloc[i].to_frame().T, CUSTOMER_TYPE)
                     PARAMS.calc_beta()
                     
-                    new_row={'EV_Type': EV_TYPE,
+                    new_row={'EV_Type': ev_type,
                             'Program':PARAMS.program,
                             'Scenario': df.iloc[i].scenario,
                             'Year': df.iloc[i].year,
