@@ -47,7 +47,7 @@ class ScenarioParameters():
                 self.no_install_beta = np.divide(math.log(temp),(-self.incentive_annual))
                 self.install_beta = np.divide(math.log(temp),(-self.incentive_new_install))
                 
-    def df_by_required_install(self, install_type, num_customers=1000):
+    def df_by_required_install(self, install_type, num_customers=CUSTOMER_RESOLUTION):
         """return df: each row is a customer with columns of associated costs
         and resulting enrollment probability"""
 
@@ -130,7 +130,7 @@ class SupplyCurves():
     def create_cost_table(self, overwrite=False):
         """SupplyCurves.table will be a dataframe of per vehicle costs for a given enrollment resolution. This will create a new 
         table of supply curves for this resolution, saved to the 'table_path'."""
-        if ( (os.path.exists(self.table_path)) and (overwrite==False)):
+        if (os.path.exists(self.table_path) and not overwrite):
             raise NameError(f"A table for a resolution of {self.enrollment_resolution}% already exists in the specified path:\
                             \n\t{self.table_path}\
                             \nTo overwrite this table, use create_cost_table(overwrite=True). Alternatively, specify a new\
@@ -153,7 +153,7 @@ class SupplyCurves():
                     customer_df = PARAMS.df_by_required_install('new_install', num_customers=CUSTOMER_RESOLUTION) 
                     customer_df['install']=['new_install']*len(customer_df)
                     
-                    no_install_df=PARAMS.df_by_required_install('no_install', num_customers=1000)
+                    no_install_df=PARAMS.df_by_required_install('no_install', num_customers=CUSTOMER_RESOLUTION)
                     no_install_df['install']=['no_install']*len(no_install_df)
 
                     customer_df = customer_df._append(no_install_df)
@@ -200,15 +200,15 @@ class SupplyCurves():
         costs.to_csv(os.path.join(evmc_supply_curves.ROOT_DIR,'outputs',f"costs_table_{self.enrollment_resolution}_pct.csv"),index=False)
         self.table=costs    
 
-    def cost_per_EV(self, PERCENT, **kwargs):
+    def cost_per_EV(self, percent, **kwargs):
         """returns per vehicle cost in USD for specified parameters. 
         If more than one possible cost exists, this will return a DataFrame for all costs."""
-        if not isinstance(PERCENT, int):
-            raise ValueError("PERCENT must be an int")
-        if PERCENT>100:
-            raise ValueError("PERCENT cannot be greater than 100")
-        if PERCENT<=0:
-            raise ValueError("PERCENT must be greater than zero")
+        if not isinstance(percent, int):
+            raise ValueError("percent must be an int")
+        if percent>100:
+            raise ValueError("percent cannot be greater than 100")
+        if percent<=0:
+            raise ValueError("percent must be greater than zero")
         if self.table.empty:
             raise NameError("No cost table specified for query. Please use SupplyCurves.load_existing_table()")
         
@@ -223,7 +223,7 @@ class SupplyCurves():
         #check if percent is in columns already
         cols=list(costs.columns)
         cols=[int(col.split('%')[0]) for col in cols if col not in parameters] 
-        if PERCENT not in cols:
+        if percent not in cols:
             # For best results, users should use a table of sufficient resolution (e.g. a query for 12% enrollment 
             # using a table with 10% precision will return a value closer to costs for 10% enrollment)
             print("cost table passed is not high resolution enough. Reading new table with 1% resolution.")
@@ -231,12 +231,11 @@ class SupplyCurves():
             self.load_existing_table()
             costs=self.table
                 
-        percent_col='{:.0f}%'.format(PERCENT)
+        percent_col='{:.0f}%'.format(percent)
         percent_df=costs.copy()
         for key, parameter in kwargs.items():
             percent_df=percent_df.loc[(percent_df[key]==parameter)]
         return percent_df[list(parameters.keys())+[percent_col]]
-
     
     
     def create_betas_table(self):
