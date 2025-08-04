@@ -191,7 +191,6 @@ class SupplyCurves():
                             pass
                         elif en>=PARAMS.upper_limit:
                             new_row['{:.0f}%'.format((en*100))]=np.NaN
-                            # new_row['{:.0f}%'.format((en*100))]='--'
                         else:
                             new_row['{:.0f}%'.format((en*100))]=en_df.loc[en_df.delta==en_df.delta.min()]['total_cost'].values[0]
                         
